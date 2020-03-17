@@ -148,7 +148,7 @@ export function effect<T = any>(
 }
 ```
 从声明中得知，第一个参数是函数，第二参数是可选配置对象，返回 **effect** 类型数据。   
-与 **reactive** 函数差不多，兼容各种情景在入口函数处理，重点逻辑在核心函数处理。    
+与 **reactive** 函数差不多，兼容各种情景在入口函数处理，重点逻辑在核心函数 **createReactiveEffect** 处理。    
 
 我们来查看 **createReactiveEffect** 函数。
 
@@ -168,7 +168,7 @@ function createReactiveEffect<T = any>(
   return effect
 }
 ```
-首先 **effect** 类型数据是一个函数，（里面调用 **run** 函数），    
+首先 **effect** 的类型数据是一个函数，（里面调用 **run** 函数），    
 然后在数据添加各个属性，其中最有价值的是 **deps** 属性。（②下回分解）   
 
 因为最后 **effect** 类型数据会被执行，即调用了 **run** 函数，打开 **run**
@@ -189,6 +189,106 @@ function run(effect: ReactiveEffect, fn: Function, args: unknown[]): unknown {
   }
 }
 ```
-其实 **run** 核心操作就把 **effcet** 保存到 **栈** 的尾部，然后执行 **fn** 。   
-所以 **响应式数据** 就可通过 **栈** 获取 **effcet** 数据。
+其实 **run** 核心操作是，把 **effcet** 先保存到 **栈** 的尾部，再执行 **fn** 函数。   
+因此 **响应式数据** 就可通过 **栈** 获取 **effcet** 数据。
 
+## 响应式对象收集依赖
+> 小二如何感知旅客走进客栈
+
+其实对Vue有了解的人都知道，框架使用Proxy劫持对象，从而收集依赖。    
+我们回顾创建响应式数据的后半段逻辑。
+
+```
+...
+...
+  const handlers = collectionTypes.has(target.constructor)
+    ? collectionHandlers
+    : baseHandlers
+  observed = new Proxy(target, handlers)
+  toProxy.set(target, observed)
+  toRaw.set(observed, target)
+  if (!targetMap.has(target)) { //给客栈一张旅客登记表
+    targetMap.set(target, new Map()) 
+  }
+  return observed
+```
+
+在创建依赖的后半段逻辑，*** effect *** 会被执行。所以必然触发响应式的*** get ***。   
+我们打开*** baseHandlers ***。
+
+```
+reactivity/src/baseHandlers.ts
+
+import { track, trigger } from './effect'
+
+export const mutableHandlers: ProxyHandler<object> = {
+  get: createGetter(false),
+  set,
+  deleteProperty,
+  has,
+  ownKeys
+}
+
+function createGetter(isReadonly: boolean, unwrap: boolean = true) {
+  return function get(target: object, key: string | symbol, receiver: object) {
+    let res = Reflect.get(target, key, receiver)
+
+    if (isSymbol(key) && builtInSymbols.has(key)) { //如果目标值是symbol类型且是原始symbol的字段，直接返回
+      return res
+    }
+    if (unwrap && isRef(res)) {
+      res = res.value
+    } else {
+      // track用于收集依赖，以后专门分析
+      track(target, OperationTypes.GET, key)
+    }
+    return isObject(res)
+      ? isReadonly
+        ? // 防止无限循环
+          readonly(res)
+        : reactive(res)
+      : res
+  }
+}
+```
+
+这段代码的重点在，*** track ***函数，看名字就知道是收集的意思，    
+传了三个参数，原始值，动作，键。
+
+```
+reactivity/src/effect.ts
+
+export function track(target: object, type: OperationTypes, key?: unknown) {
+  if (!shouldTrack || effectStack.length === 0) {
+    return
+  }
+  const effect = effectStack[effectStack.length - 1] //触发get的依赖对象
+  if (type === OperationTypes.ITERATE) {
+    key = ITERATE_KEY
+  }
+  let depsMap = targetMap.get(target)
+  if (depsMap === void 0) {
+    targetMap.set(target, (depsMap = new Map()))
+  }
+  let dep = depsMap.get(key!) // 获取触发动作所有的依赖
+  if (dep === void 0) {
+    depsMap.set(key!, (dep = new Set()))
+  }
+  if (!dep.has(effect)) {
+    dep.add(effect) // 如果改触发动作没有收集，那保存
+    effect.deps.push(dep) // 依赖也把触发动作的 【依赖集合】保存
+    if (__DEV__ && effect.options.onTrack) {
+      effect.options.onTrack({
+        effect,
+        target,
+        type,
+        key
+      })
+    }
+  }
+}
+```
+因为在创建依赖的后半段逻辑，依赖对象会添加到 依赖栈 的末尾。     
+所以响应式数据能通过 依赖栈 获取对应的依赖。    
+然后再把 依赖 保存到对应 触发动作分类集合中。    
+然后 依赖 也罢 触发动作分类集合 保存到自己属性里。
