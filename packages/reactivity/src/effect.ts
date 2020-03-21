@@ -151,29 +151,34 @@ export function trigger(
   key?: unknown,
   extraInfo?: DebuggerEventExtraInfo
 ) {
-  const depsMap = targetMap.get(target)
+  const depsMap = targetMap.get(target) //所有动作依赖
   if (depsMap === void 0) {
     // never been tracked
     return
   }
+  // 普通依赖和计算依赖分开存放
   const effects = new Set<ReactiveEffect>()
   const computedRunners = new Set<ReactiveEffect>()
   if (type === OperationTypes.CLEAR) {
     // collection being cleared, trigger all effects for target
+    // 如果是清除动作，通知所有动作下的依赖
     depsMap.forEach(dep => {
       addRunners(effects, computedRunners, dep)
     })
   } else {
     // schedule runs for SET | ADD | DELETE
+    // 修改 | 增加 | 删除 都会有key
     if (key !== void 0) {
-      addRunners(effects, computedRunners, depsMap.get(key))
+      addRunners(effects, computedRunners, depsMap.get(key)) //获取对应动作的依赖
     }
     // also run for iteration key on ADD | DELETE
+    // 如果是 增加 或者 删除 通知 length 或者 ITERATE_KEY 动作下所有依赖
     if (type === OperationTypes.ADD || type === OperationTypes.DELETE) {
       const iterationKey = isArray(target) ? 'length' : ITERATE_KEY
       addRunners(effects, computedRunners, depsMap.get(iterationKey))
     }
   }
+  //通知依赖更新
   const run = (effect: ReactiveEffect) => {
     scheduleRun(effect, target, type, key, extraInfo)
   }
@@ -216,8 +221,8 @@ function scheduleRun(
     effect.options.onTrigger(extraInfo ? extend(event, extraInfo) : event)
   }
   if (effect.options.scheduler !== void 0) {
-    effect.options.scheduler(effect)
+    effect.options.scheduler(effect) //如果有 scheduler 参数，使用 scheduler
   } else {
-    effect()
+    effect() // 调用依赖
   }
 }
