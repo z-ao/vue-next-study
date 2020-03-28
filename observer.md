@@ -369,6 +369,37 @@ function scheduleRun(
 3. 通过**addRunners**函数，把依赖分类存放**effects**和**computedRunners**两个Set中     
 4. 遍历两个Set，执行并更新<b class="effect">依赖数据</b> 
 
+<br/>
+### 依赖数据收到通知如何做更新
+<b class="reactive">响应式数据</b>调用**trigger**函数后，会立刻执行<b class="effect">依赖数据</b>，    
+<b class="effect">依赖数据</b>的执行过程和创建的逻辑大致相同，当然到了，存在差异才是这步最有价值的地方。   
+
+解答第③问题，为什么要清除当前依赖与所有响应式关系
+
+```
+// reactivity/src/effect.ts
+export const effectStack: ReactiveEffect[] = []
+
+function run(effect: ReactiveEffect, fn: Function, args: unknown[]): unknown {
+  ...
+    cleanup(effect) //清除与所有响应式对象建立的依赖关系 ③why
+}
+
+function cleanup(effect: ReactiveEffect) {
+  const { deps } = effect
+  if (deps.length) {
+    for (let i = 0; i < deps.length; i++) {
+      deps[i].delete(effect)
+    }
+    deps.length = 0
+  }
+}
+```
+因为<b class="reactive">响应式数据</b>会存在被删除的情景，所以清除对应关系，便会**释放内存**以免造成内存泄漏，    
+而当前<b class="effect">依赖数据</b>无法感知具体被删除的<b class="reactive">响应式数据</b>，    
+但是被删除的<b class="reactive">响应式数据</b>是无法触发**get**收集<b class="effect">依赖数据</b>，   
+所以只好全都删除，然后与其在没有删除的<b class="reactive">响应式数据</b>重建关系。
+
 <style>
 body{
 	color: #333;
