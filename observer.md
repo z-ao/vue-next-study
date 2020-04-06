@@ -382,7 +382,7 @@ export const effectStack: ReactiveEffect[] = []
 
 function run(effect: ReactiveEffect, fn: Function, args: unknown[]): unknown {
   ...
-    cleanup(effect) //清除与所有响应式对象建立的依赖关系 ③why
+  cleanup(effect) //清除与所有响应式对象建立的依赖关系 ③why
 }
 
 function cleanup(effect: ReactiveEffect) {
@@ -399,6 +399,25 @@ function cleanup(effect: ReactiveEffect) {
 而当前<b class="effect">依赖数据</b>无法感知具体被删除的<b class="reactive">响应式数据</b>，    
 但是被删除的<b class="reactive">响应式数据</b>是无法触发**get**收集<b class="effect">依赖数据</b>，   
 所以只好全都删除，然后与其在没有删除的<b class="reactive">响应式数据</b>重建关系。
+
+<br/>
+
+#### 响应式数据的状态有多少种改变情况
+所以改变情况的情况都写在**operations**文件中，其中需要注意的地方是    
+**CLEAR**动作会触发所有状态，**SET、ADD、DELETE**会附带通知**ITERATE**状态更新
+
+```
+// reactivity/src/operations.ts
+export const enum OperationTypes {
+  SET = 'set',
+  ADD = 'add',
+  DELETE = 'delete',
+  CLEAR = 'clear',
+  GET = 'get',
+  HAS = 'has',
+  ITERATE = 'iterate'
+}
+```
 
 <style>
 body{
