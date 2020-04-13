@@ -7,7 +7,7 @@ packages目录是Vue主要功能实现的目录。
 
 * compiler-core 编译器核心功能&
 * compiler-dom 浏览器中实现编译器核心功能&
-* compiler-sfc 单个组件编译器
+* compiler-sfc 单文件组件编译器
 * reactivity 响应式的模块&
 * runtime-core 核心功能，虚拟DOM、Vue生命周期等各个API& 
 * rumtime-dom 浏览器中实现核心功能&
