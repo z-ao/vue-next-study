@@ -34,12 +34,12 @@ export function baseCompile(
     }
   }
 
-  const ast = isString(template) ? parse(template, options) : template
+  const ast = isString(template) ? parse(template, options) : template //解析模板字符串生成 AST
 
   const prefixIdentifiers =
     !__BROWSER__ &&
     (options.prefixIdentifiers === true || options.mode === 'module')
-
+  //优化语法树
   transform(ast, {
     ...options,
     prefixIdentifiers,
@@ -67,7 +67,8 @@ export function baseCompile(
       ...(options.directiveTransforms || {}) // user transforms
     }
   })
-
+ 
+  //生成代码
   return generate(ast, {
     ...options,
     prefixIdentifiers
