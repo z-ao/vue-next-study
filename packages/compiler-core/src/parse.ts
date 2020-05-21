@@ -154,12 +154,12 @@ function parseChildren(
         emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 1)
       } else if (s[1] === '!') {
         // https://html.spec.whatwg.org/multipage/parsing.html#markup-declaration-open-state
-        if (startsWith(s, '<!--')) {
+        if (startsWith(s, '<!--')) { //注释
           node = parseComment(context)
-        } else if (startsWith(s, '<!DOCTYPE')) {
+        } else if (startsWith(s, '<!DOCTYPE')) { //DTD
           // Ignore DOCTYPE by a limitation.
           node = parseBogusComment(context)
-        } else if (startsWith(s, '<![CDATA[')) {
+        } else if (startsWith(s, '<![CDATA[')) { //xml
           if (ns !== Namespaces.HTML) {
             node = parseCDATA(context, ancestors)
           } else {
