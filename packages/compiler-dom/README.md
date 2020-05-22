@@ -270,3 +270,9 @@ function advanceBy(context: ParserContext, numberOfCharacters: number): void {
 }
 ```
 在while中解析，并通过多个判断执行对应parse方法，advanceBy方法推动解析。
+
+<img src="./advance.jpg" width="100%"/>
+
+每种情况对应的parse分支
+
+<img src="./parse.png" width="100%" />

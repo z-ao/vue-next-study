@@ -145,21 +145,21 @@ function parseChildren(
     const s = context.source
     let node: TemplateChildNode | TemplateChildNode[] | undefined = undefined
 
-    if (!context.inPre && startsWith(s, context.options.delimiters[0])) {
+    if (!context.inPre && startsWith(s, context.options.delimiters[0])) { //状态
       // '{{'
       node = parseInterpolation(context, mode)
-    } else if (mode === TextModes.DATA && s[0] === '<') {
+    } else if (mode === TextModes.DATA && s[0] === '<') { //标签
       // https://html.spec.whatwg.org/multipage/parsing.html#tag-open-state
-      if (s.length === 1) {
+      if (s.length === 1) { //<
         emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 1)
-      } else if (s[1] === '!') {
+      } else if (s[1] === '!') {//注释 / DTD / xml
         // https://html.spec.whatwg.org/multipage/parsing.html#markup-declaration-open-state
-        if (startsWith(s, '<!--')) { //注释
+        if (startsWith(s, '<!--')) { 
           node = parseComment(context)
-        } else if (startsWith(s, '<!DOCTYPE')) { //DTD
+        } else if (startsWith(s, '<!DOCTYPE')) {
           // Ignore DOCTYPE by a limitation.
           node = parseBogusComment(context)
-        } else if (startsWith(s, '<![CDATA[')) { //xml
+        } else if (startsWith(s, '<![CDATA[')) {
           if (ns !== Namespaces.HTML) {
             node = parseCDATA(context, ancestors)
           } else {
@@ -170,15 +170,15 @@ function parseChildren(
           emitError(context, ErrorCodes.INCORRECTLY_OPENED_COMMENT)
           node = parseBogusComment(context)
         }
-      } else if (s[1] === '/') {
+      } else if (s[1] === '/') { //结束标签
         // https://html.spec.whatwg.org/multipage/parsing.html#end-tag-open-state
-        if (s.length === 2) {
+        if (s.length === 2) { //</
           emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 2)
-        } else if (s[2] === '>') {
+        } else if (s[2] === '>') { //</>
           emitError(context, ErrorCodes.MISSING_END_TAG_NAME, 2)
           advanceBy(context, 3)
           continue
-        } else if (/[a-z]/i.test(s[2])) {
+        } else if (/[a-z]/i.test(s[2])) { //</[a-z]
           emitError(context, ErrorCodes.X_INVALID_END_TAG)
           parseTag(context, TagType.End, parent)
           continue
@@ -186,7 +186,7 @@ function parseChildren(
           emitError(context, ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME, 2)
           node = parseBogusComment(context)
         }
-      } else if (/[a-z]/i.test(s[1])) {
+      } else if (/[a-z]/i.test(s[1])) { //开始标签
         node = parseElement(context, ancestors)
       } else if (s[1] === '?') {
         emitError(
@@ -199,7 +199,7 @@ function parseChildren(
         emitError(context, ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME, 1)
       }
     }
-    if (!node) {
+    if (!node) { //文字
       node = parseText(context, mode)
     }
 
