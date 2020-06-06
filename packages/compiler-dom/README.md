@@ -1,9 +1,10 @@
 # @vue/compiler-dom
 
 ## 编辑器
-其作用是把template编译成render函数。
+其作用是把template编译成render函数。    
+其过程不是一戳儿就的，需要经过解析->优化->编辑。这个步骤
 
-## 解析
+## 入口
 
 它的入口是***compiler-dom/src/index.ts***
 
@@ -97,9 +98,9 @@ export function baseCompile(
 
 1. 解析模板字符串生成 AST
 2. 优化语法树
-3. 生成代码
+3. 编译代码
 
-### parse
+## 解析parse
 
 编辑过程首先对模版进行解析，生产AST，它是一个抽象语法树，是对源代码的抽象语法结构的树状表现形象。
 
@@ -271,8 +272,16 @@ function advanceBy(context: ParserContext, numberOfCharacters: number): void {
 ```
 在while中解析，并通过多个判断执行对应parse方法，advanceBy方法推动解析。
 
-<img src="./advance.jpg" width="100%"/>
+<img src="./advance.jpg" width="100%" />
 
 每种情况对应的parse分支
 
 <img src="./parse.png" width="100%" />
+
+* parseInterpolation 解析状态
+* parseText 解析文本
+* parseComment 解析用户编写的注释
+* parseBogusComment 解析语法不合配的注释
+* parseCDATA 解析xml
+* parseTag 解析标签
+* parseElement 解析dom 

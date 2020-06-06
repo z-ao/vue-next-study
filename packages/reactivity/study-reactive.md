@@ -28,8 +28,8 @@ export function reactive(target: object) {
 }
 ```
 前面两个判断很简单，只要是被劫持或只读直接返回。     
-第二步，分两个逻辑分支，分别是readonly和普通响应式。它们都使用createReactiveObject方法实现，     
-区别是保存的Map对象不一样。    
+第二步，分两个逻辑，分别是 readonly 和 普通响应式。     
+它们都使用createReactiveObject方法实现，只是Map对象不一样。    
 
 ```
 function createReactiveObject(
@@ -73,9 +73,9 @@ function createReactiveObject(
   return observed
 }
 ```
-createReactiveObject方法前面照旧也是琐碎判断，如果是响应式、或已劫持、或是不能劫持类型，直接返回。       
+createReactiveObject方法前面也是琐碎判断，如果是响应式、已劫持或是不能劫持类型，直接返回。       
 然后是用ES Proxy劫持数据，    
-再把源数据和劫持后数据保存到两个Map里，
+再把源数据和劫持后数据保存到两个Map里，   
 最后在targetMap为该响应式数据创建空间，收集对应的监听者。
 
 上面述说的大概逻辑。现在对每一个在详细描述。
@@ -91,10 +91,11 @@ createReactiveObject方法前面照旧也是琐碎判断，如果是响应式、
 
 ### reactive如何返回不为Ref类型的对象
 在上面概括中，reactive返回Proxy劫持的值，    
-而这里Proxy有两种handle的情况，为了易懂，先看baseHandlers。   
-
+而Proxy有两种handle，我们只分析baseHandlers。   
+
+
 ```
-//baseHandlers 其实是 baseHandlers.ts 文件的 mutableHandlers 对象
+// baseHandlers 其实是 baseHandlers.ts 文件的 mutableHandlers 对象   
 export const mutableHandlers: ProxyHandler<object> = {
   get: createGetter(false),
   set,
@@ -117,3 +118,6 @@ function createGetter(isReadonly: boolean, unwrap: boolean = true) {
   }
 }
 ```
+
+**proxy**的**get**方法触发时，   
+判断如果是**Ref**类型，就返回**Ref**的**value**属性，所以值不可能是**Ref**类型
