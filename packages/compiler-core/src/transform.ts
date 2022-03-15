@@ -278,6 +278,7 @@ function finalizeRoot(root: RootNode, context: TransformContext) {
     }
   } else if (children.length > 1) {
     // root has multiple nodes - return a fragment block.
+    // 如果有多个子节点，使用fragment
     root.codegenNode = createBlockExpression(
       createCallExpression(helper(CREATE_BLOCK), [
         helper(FRAGMENT),
